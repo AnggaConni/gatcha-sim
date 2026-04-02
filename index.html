@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Lab: Bilingual Edition 2.3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Gacha Lab: Teori Interaktif & Simulasi Kecanduan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -90,6 +90,23 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Teori dinamis */
+        .theory-card {
+            transition: all 0.2s ease;
+            border-left: 4px solid;
+        }
+        .theory-highlight {
+            background: #fef9e3;
+            transform: scale(1.01);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        }
+        .cost-badge {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -103,8 +120,8 @@
 
         <!-- Judul Utama -->
         <header class="text-center mb-10">
-            <h1 class="text-5xl font-extrabold text-slate-900 mb-2 tracking-tight">Gacha Lab <span class="text-blue-600">2.3</span></h1>
-            <p id="sub-title" class="text-slate-500 font-medium italic">"Membongkar Rahasia di Balik Tarikan Berhadiah"</p>
+            <h1 class="text-5xl font-extrabold text-slate-900 mb-2 tracking-tight">Gacha Lab <span class="text-blue-600">Teori+</span></h1>
+            <p id="sub-title" class="text-slate-500 font-medium italic">"Membongkar Rahasia di Balik Tarikan Berhadiah + Sains Perilaku"</p>
         </header>
 
         <div class="grid lg:grid-cols-12 gap-8">
@@ -157,27 +174,39 @@
                     </button>
                 </div>
 
-                <!-- Visualisasi Peluang -->
+                <!-- Visualisasi Peluang (Grid) -->
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <h3 id="reality-title" class="font-bold text-slate-800 mb-2">Peluang Nyata (1%)</h3>
                     <p id="reality-desc" class="text-xs text-slate-500 mb-4">Setiap titik adalah uangmu. Hanya satu yang emas. Sisanya? Hangus.</p>
                     <div id="prob-grid" class="probability-grid grid grid-cols-10 gap-1"></div>
+                    <!-- Ekspektasi kerugian -->
+                    <div id="expected-loss-box" class="mt-4 text-xs bg-slate-100 p-3 rounded-xl">
+                        <span class="font-bold">📉 Analisis Ekspektasi: </span>
+                        <span id="expected-loss-text">Setiap 100 pull → rata-rata rugi Rp 990.000 (hanya 1% chance dapat SSR)</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- KANAN: Area Teori & Riwayat -->
+            <!-- KANAN: Teori Interaktif + Riwayat -->
             <div class="lg:col-span-5 space-y-6">
-                <!-- Alert Near-Miss -->
+                <!-- Alert Near-Miss (tetap ada) -->
                 <div id="near-miss-alert" class="hidden bg-rose-50 p-6 rounded-3xl border-2 border-rose-200 animate-bounce">
                     <h3 id="alert-title" class="font-bold text-rose-600 flex items-center gap-2">⚠️ JEBAKAN TERDETEKSI!</h3>
                     <p id="alert-desc" class="text-sm text-rose-700 mt-2 leading-relaxed font-medium"></p>
                 </div>
 
-                <!-- Bagian Teori -->
-                <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 overflow-y-auto max-h-[600px] scrollbar-hide">
-                    <h3 id="theory-header" class="text-xl font-bold text-slate-800 mb-6 border-b pb-4">🧠 Sains Kecanduan</h3>
-                    <div id="theory-container" class="space-y-6">
-                        <!-- Konten Teori akan diisi oleh JS -->
+                <!-- Bagian Teori DINAMIS (ditambah logika interaktif) -->
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 id="theory-header" class="text-xl font-bold text-slate-800">🧠 Sains Kecanduan</h3>
+                        <span id="theory-badge" class="bg-slate-100 text-slate-600 text-[10px] px-2 py-1 rounded-full">Live Insight</span>
+                    </div>
+                    <div id="dynamic-theory" class="space-y-5 max-h-[320px] overflow-y-auto pr-2 scrollbar-hide">
+                        <!-- konten teori dinamis akan diisi JS -->
+                    </div>
+                    <!-- Tambahan: indikator "kekeliruan kognitif aktif" -->
+                    <div id="active-fallacy" class="mt-4 pt-3 border-t border-dashed border-slate-200 text-[11px] text-slate-500 italic">
+                        💡 <span id="active-fallacy-text">Belum ada pola signifikan. Mulai tarik untuk analisis.</span>
                     </div>
                 </div>
 
@@ -205,10 +234,17 @@
         let isSpinning = false;
         let gridProgress = 0;
 
+        // Logika teori lanjutan: track streak tanpa SSR, near miss terakhir, dll.
+        let streakWithoutSSR = 0;
+        let lastNearMissTime = 0;
+        let lastPullWasNearMiss = false;
+        let consecutiveLosses = 0;   // untuk gambler's fallacy
+
+        // Data terjemahan (ditambah konten teori dinamis)
         const TRANSLATIONS = {
             id: {
                 langBtn: 'Switch to English',
-                subTitle: '"Membongkar Rahasia di Balik Tarikan Berhadiah"',
+                subTitle: '"Membongkar Rahasia di Balik Tarikan Berhadiah + Sains Perilaku"',
                 balLabel: 'Koin Tersisa',
                 pullLabel: 'Total Tarikan',
                 rareLabel: 'Item Langka',
@@ -226,17 +262,21 @@
                 msgWin: 'Luar Biasa! Kamu sangat beruntung!',
                 confirmReset: 'Isi ulang koin dan hapus semua data simulasi?',
                 legendaryLabel: 'LEGENDARY (SSR)',
-                theories: [
-                    { t: "Dopamine Loop", d: "Otakmu mengeluarkan zat kimia 'senang' saat menunggu putaran mesin berhenti. Ini membuatmu ketagihan klik tombolnya." },
-                    { t: "Gambler's Fallacy", d: "Anggapan salah bahwa jika kamu sering kalah, maka kemenangan 'pasti sudah dekat'. Padahal peluang tiap tarikan selalu sama." },
-                    { t: "Sunk Cost Fallacy", d: "Merasa sayang berhenti karena sudah habis banyak. Ini membuatmu terus kehilangan lebih banyak uang." },
-                    { t: "Social Proof", d: "Game sering memberi tahu saat orang lain menang besar. Ini membuatmu merasa menang itu mudah, padahal tidak." },
-                    { t: "Loss Aversion", d: "Rasa sakit kehilangan koin terasa 2x lebih kuat daripada rasa senang saat mendapatkannya. Ini memicu stres." }
-                ]
+                // Teori statis untuk fallback, tapi kita akan gunakan dynamic
+                theoryDynamic: {
+                    variableRatio: "🎰 **Variable Ratio Reinforcement** — Hadiah datang tidak menentu, membuat otak terus menekan tombol karena 'bisa saja kapan pun'. Ini yang paling adiktif.",
+                    nearMiss: "🎲 **Near Miss Effect** — Hampir menang memicu dopamin lebih kuat dari kalah biasa. Game mengeksploitasi ini dengan menampilkan hadiah besar di sebelah hasilmu.",
+                    gamblerFallacy: "🧠 **Gambler's Fallacy Aktif** — Setelah 20x tanpa SSR, kamu mulai yakin 'pasti segera dapat'. Padahal peluang tiap pull tetap 1%.",
+                    sunkCost: "💰 **Sunk Cost Fallacy** — Kamu sudah menghabiskan banyak uang. Berhenti terasa rugi, padahal lanjut lebih rugi.",
+                    lossAversion: "⚠️ **Loss Aversion** — Rasa sakit kehilangan 2x lebih kuat dari senang mendapat. Ini memicu emosi dan keputusan impulsif.",
+                    socialProof: "📢 **Social Proof** — Game sering umumkan kemenangan orang lain, seolah mudah menang. Padahal 99% lainnya gagal.",
+                    streakWarning: "📉 **Krisis Statistik** — Sudah {{streak}} pull tanpa SSR. Ekspektasi matematis kamu sudah di luar rata-rata, tapi tetap tidak ada jaminan.",
+                    firstPull: "✨ Mulai tarik! Perhatikan bagaimana setiap hasil mempengaruhi keinginanmu untuk 'coba lagi'."
+                }
             },
             en: {
                 langBtn: 'Ganti ke Indonesia',
-                subTitle: '"Unmasking the Secrets Behind the Lucky Pulls"',
+                subTitle: '"Unmasking Secrets + Behavioral Science"',
                 balLabel: 'Remaining Coins',
                 pullLabel: 'Total Pulls',
                 rareLabel: 'Rare Items',
@@ -254,13 +294,16 @@
                 msgWin: 'Incredible! You are very lucky!',
                 confirmReset: 'Refill coins and clear all simulation data?',
                 legendaryLabel: 'LEGENDARY (SSR)',
-                theories: [
-                    { t: "Dopamine Loop", d: "Your brain releases 'happy' chemicals while waiting for the spin to stop. This makes the clicking addictive." },
-                    { t: "Gambler's Fallacy", d: "The false belief that if you lose often, a win 'must be due'. In reality, every pull has the same low odds." },
-                    { t: "Sunk Cost Fallacy", d: "Feeling like you can't stop because you've spent too much. This leads to losing even more money." },
-                    { t: "Social Proof", d: "Games announce when others win big. This tricks you into thinking winning is common when it's not." },
-                    { t: "Loss Aversion", d: "The pain of losing coins is 2x stronger than the joy of winning. This triggers emotional stress." }
-                ]
+                theoryDynamic: {
+                    variableRatio: "🎰 **Variable Ratio Reinforcement** — Unpredictable rewards make your brain keep clicking because 'maybe next time'. Most addictive schedule.",
+                    nearMiss: "🎲 **Near Miss Effect** — Almost winning triggers more dopamine than a clear loss. Games exploit this by showing jackpots adjacent to your result.",
+                    gamblerFallacy: "🧠 **Gambler's Fallacy Active** — After 20 pulls with no SSR, you start believing 'it must be soon'. But odds remain 1% each time.",
+                    sunkCost: "💰 **Sunk Cost Fallacy** — You've spent too much. Stopping feels like a loss, but continuing guarantees more loss.",
+                    lossAversion: "⚠️ **Loss Aversion** — Pain of losing is 2x stronger than joy of winning. This fuels impulsive decisions.",
+                    socialProof: "📢 **Social Proof** — Games announce winners as if winning is easy. In reality, 99% lose.",
+                    streakWarning: "📉 **Statistical Crisis** — {{streak}} pulls without SSR. Expected value already negative, but no guaranteed win.",
+                    firstPull: "✨ Start pulling! Observe how each result fuels the urge to 'try again'."
+                }
             }
         };
 
@@ -274,6 +317,7 @@
         function toggleLanguage() {
             currentLang = currentLang === 'id' ? 'en' : 'id';
             updateLanguageUI();
+            updateDynamicTheory(); // refresh teori sesuai state
         }
 
         function updateLanguageUI() {
@@ -293,25 +337,97 @@
             document.getElementById('history-title').innerText = t.historyTitle;
             if (document.getElementById('no-history')) document.getElementById('no-history').innerText = t.noHistory;
             document.getElementById('reset-btn').innerText = t.resetBtn;
-            
-            // Update Teori
-            const container = document.getElementById('theory-container');
-            container.innerHTML = '';
-            const colors = ['blue', 'purple', 'rose', 'amber', 'emerald'];
-            t.theories.forEach((theory, i) => {
-                const div = document.createElement('div');
-                div.className = 'flex gap-4';
-                div.innerHTML = `
-                    <div class="bg-${colors[i]}-100 text-${colors[i]}-600 w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold">${i+1}</div>
-                    <div>
-                        <h4 class="font-bold text-slate-800 text-sm">${theory.t}</h4>
-                        <p class="text-[11px] text-slate-600 leading-relaxed">${theory.d}</p>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-
             updateStats();
+        }
+
+        // Teori Dinamis berdasarkan state permainan
+        function updateDynamicTheory() {
+            const t = TRANSLATIONS[currentLang].theoryDynamic;
+            const container = document.getElementById('dynamic-theory');
+            if (!container) return;
+            
+            let theoryHtml = '';
+            let activeFallacyMsg = '';
+            
+            // 1. Selalu tampilkan variable ratio sebagai dasar
+            theoryHtml += `<div class="theory-card p-3 rounded-xl bg-blue-50 border-l-blue-500" style="border-left-color: #3b82f6">
+                            <h4 class="font-bold text-slate-800 text-sm">🎲 Variable Ratio Reinforcement</h4>
+                            <p class="text-[11px] text-slate-700 leading-relaxed">${t.variableRatio}</p>
+                          </div>`;
+            
+            // 2. Jika baru saja terjadi near miss, tampilkan efek near miss dengan highlight
+            if (lastPullWasNearMiss && (Date.now() - lastNearMissTime < 3000)) {
+                theoryHtml += `<div class="theory-card p-3 rounded-xl bg-rose-50 border-l-rose-500 animate-pulse">
+                                <h4 class="font-bold text-rose-700 text-sm">⚠️ NEAR MISS TERJADI!</h4>
+                                <p class="text-[11px] text-rose-700">${t.nearMiss}</p>
+                              </div>`;
+                activeFallacyMsg = "🔴 Efek Near Miss aktif: Otakmu sedang dibajak untuk merasa 'hampir menang'. Hati-hati!";
+            } else {
+                theoryHtml += `<div class="theory-card p-3 rounded-xl bg-slate-50 border-l-slate-400">
+                                <h4 class="font-bold text-slate-700 text-sm">🎯 Near Miss Effect</h4>
+                                <p class="text-[11px] text-slate-600">${t.nearMiss}</p>
+                              </div>`;
+            }
+            
+            // 3. Gambler's Fallacy jika streak tanpa SSR > 30 atau setelah banyak pull tanpa legendary
+            if (streakWithoutSSR >= 30 && totalPulls > 30) {
+                theoryHtml += `<div class="theory-card p-3 rounded-xl bg-amber-50 border-l-amber-500">
+                                <h4 class="font-bold text-amber-700 text-sm">🧠 Gambler's Fallacy AKTIF!</h4>
+                                <p class="text-[11px] text-amber-700">${t.gamblerFallacy.replace('{{streak}}', streakWithoutSSR)}</p>
+                              </div>`;
+                activeFallacyMsg = `⚠️ Kekeliruan penjudi: Sudah ${streakWithoutSSR} pull tanpa SSR, kamu mungkin berpikir "pasti next". Padahal peluang tetap 1%.`;
+            } else if (streakWithoutSSR > 15) {
+                theoryHtml += `<div class="theory-card p-3 rounded-xl bg-amber-50/50 border-l-amber-300">
+                                <h4 class="font-bold text-amber-600 text-sm">📈 Mulai terjebak Gambler's Fallacy</h4>
+                                <p class="text-[11px] text-amber-700">Setelah ${streakWithoutSSR} tarikan tanpa hadiah utama, rasa 'sudah dekat' semakin kuat.</p>
+                              </div>`;
+                activeFallacyMsg = `⚠️ Perhatikan: Semakin panjang streak kalah, semakin besar keyakinan keliru bahwa kemenangan "harus" segera datang.`;
+            }
+            
+            // 4. Sunk Cost jika uang terpakai > 1.5jt (150 pull)
+            const moneyUsed = totalPulls * 10000;
+            if (moneyUsed > 1500000 && totalPulls > 100) {
+                theoryHtml += `<div class="theory-card p-3 rounded-xl bg-indigo-50 border-l-indigo-500">
+                                <h4 class="font-bold text-indigo-700 text-sm">💰 Sunk Cost Fallacy</h4>
+                                <p class="text-[11px] text-indigo-700">${t.sunkCost} (Total terpakai: Rp ${moneyUsed.toLocaleString('id-ID')})</p>
+                              </div>`;
+                if (!activeFallacyMsg) activeFallacyMsg = "💰 Biaya yang sudah terlanjur: Kamu cenderung terus bermain karena sayang rugi.";
+            }
+            
+            // 5. Loss aversion jika beberapa kali near miss berturut-turut atau rugi besar
+            if (totalPulls > 50 && rareCount === 0) {
+                theoryHtml += `<div class="theory-card p-3 rounded-xl bg-purple-50 border-l-purple-400">
+                                <h4 class="font-bold text-purple-700 text-sm">⚠️ Loss Aversion</h4>
+                                <p class="text-[11px] text-purple-700">${t.lossAversion}</p>
+                              </div>`;
+                if (!activeFallacyMsg) activeFallacyMsg = "Rasa sakit kehilangan uang membuatmu nekat 'balik modal' – ini lingkaran setan.";
+            }
+            
+            // 6. Social proof / ilusi kemenangan (setiap 50 pull tanpa SSR beri perspektif)
+            if (totalPulls % 50 === 0 && totalPulls > 0 && streakWithoutSSR > 20) {
+                theoryHtml += `<div class="theory-card p-3 rounded-xl bg-emerald-50 border-l-emerald-400">
+                                <h4 class="font-bold text-emerald-700 text-sm">📢 Social Proof Trap</h4>
+                                <p class="text-[11px] text-emerald-700">${t.socialProof}</p>
+                              </div>`;
+            }
+            
+            // 7. Jika masih belum ada teori dominan & total pull == 0, tampilkan pesan awal
+            if (totalPulls === 0) {
+                theoryHtml += `<div class="text-xs text-slate-500 italic p-2">✨ ${t.firstPull}</div>`;
+                activeFallacyMsg = "Mulailah tarik untuk melihat bagaimana psikologi bekerja secara langsung.";
+            }
+            
+            // Jika tidak ada fallacy terdeteksi sebelumnya, kasih pesan netral
+            if (totalPulls > 0 && !activeFallacyMsg) {
+                activeFallacyMsg = "🧠 Saat ini belum ada pola distorsi kuat. Tetap waspadai setiap 'hampir menang' dan jangan biarkan dopamin menguasai.";
+            }
+            
+            container.innerHTML = theoryHtml;
+            document.getElementById('active-fallacy-text').innerHTML = activeFallacyMsg || "Amati perubahan teori seiring tarikanmu.";
+            
+            // Update expected loss setiap kali
+            const expectedLoss = (totalPulls * 10000) * 0.99; // 99% uang hangus secara ekspektasi
+            document.getElementById('expected-loss-text').innerHTML = `Setiap 100 pull → rata-rata rugi Rp 990.000. Kamu sudah rugi ekspektasi ~Rp ${expectedLoss.toLocaleString('id-ID')} (belum termasuk keberuntungan).`;
         }
 
         function initProbabilityGrid() {
@@ -353,62 +469,7 @@
             document.getElementById('money-spent').innerText = "Rp " + (totalPulls * 10000).toLocaleString('id-ID');
             document.getElementById('pull-1').disabled = (balance < 100 || isSpinning);
             document.getElementById('pull-10').disabled = (balance < 1000 || isSpinning);
-        }
-
-        function pull(count) {
-            if (isSpinning || balance < (100 * count)) return;
-            isSpinning = true;
-            updateStats();
-            document.getElementById('near-miss-alert').classList.add('hidden');
-            balance -= (100 * count);
-            
-            const track = document.getElementById('slot-track');
-            track.style.transition = 'none';
-            track.style.transform = 'translateX(0px)';
-
-            if (count === 1) {
-                const result = getRandomItem();
-                const isNearMiss = result.id !== 'ssr' && Math.random() < 0.35;
-                createSlotItems(result, isNearMiss);
-                
-                setTimeout(() => {
-                    track.style.transition = 'transform 3s cubic-bezier(0.15, 0, 0.05, 1)';
-                    const containerWidth = document.querySelector('.slot-machine').offsetWidth;
-                    const stopPos = (35 * 100) + 50 - (containerWidth / 2);
-                    track.style.transform = `translateX(-${stopPos}px)`;
-                }, 50);
-
-                setTimeout(() => {
-                    finalizePull(result, isNearMiss);
-                    isSpinning = false;
-                    updateStats();
-                }, 3100);
-            } else {
-                showMessage(TRANSLATIONS[currentLang].msgPull10);
-                createSlotItems(ITEMS[Math.floor(Math.random() * 3)], false);
-                
-                setTimeout(() => {
-                    track.style.transition = 'transform 1s cubic-bezier(0.15, 0, 0.05, 1)';
-                    const containerWidth = document.querySelector('.slot-machine').offsetWidth;
-                    const stopPos = (35 * 100) + 50 - (containerWidth / 2);
-                    track.style.transform = `translateX(-${stopPos}px)`;
-                }, 50);
-
-                setTimeout(() => {
-                    let hasSSR = false;
-                    for (let i = 0; i < 10; i++) {
-                        const r = getRandomItem();
-                        if (r.id === 'ssr') hasSSR = true;
-                        totalPulls++;
-                        if (r.id === 'ssr' || r.id === 'epic') rareCount++;
-                        addToHistory(r);
-                        markGridProgress(r.id === 'ssr');
-                    }
-                    if (hasSSR) showMessage(TRANSLATIONS[currentLang].msgWin);
-                    isSpinning = false;
-                    updateStats();
-                }, 1100);
-            }
+            updateDynamicTheory();
         }
 
         function getRandomItem() {
@@ -421,26 +482,115 @@
             return ITEMS[0];
         }
 
+        // Fungsi utama pull (single & multi)
+        function pull(count) {
+            if (isSpinning || balance < (100 * count)) return;
+            isSpinning = true;
+            updateStats();
+            document.getElementById('near-miss-alert').classList.add('hidden');
+            balance -= (100 * count);
+            
+            const track = document.getElementById('slot-track');
+            track.style.transition = 'none';
+            track.style.transform = 'translateX(0px)';
+            
+            if (count === 1) {
+                const result = getRandomItem();
+                // Logika near miss: jika bukan SSR dan random < 0.35 (35% kemungkinan near miss visual)
+                const isNearMiss = (result.id !== 'ssr') && (Math.random() < 0.35);
+                lastPullWasNearMiss = isNearMiss;
+                if(isNearMiss) lastNearMissTime = Date.now();
+                createSlotItems(result, isNearMiss);
+                
+                setTimeout(() => {
+                    track.style.transition = 'transform 3s cubic-bezier(0.15, 0, 0.05, 1)';
+                    const containerWidth = document.querySelector('.slot-machine').offsetWidth;
+                    const stopPos = (35 * 100) + 50 - (containerWidth / 2);
+                    track.style.transform = `translateX(-${stopPos}px)`;
+                }, 50);
+                
+                setTimeout(() => {
+                    finalizePull(result, isNearMiss);
+                    isSpinning = false;
+                    updateStats();
+                }, 3100);
+            } 
+            else { // 10 pull cepat
+                showMessage(TRANSLATIONS[currentLang].msgPull10);
+                createSlotItems(ITEMS[Math.floor(Math.random() * 3)], false);
+                
+                setTimeout(() => {
+                    track.style.transition = 'transform 1s cubic-bezier(0.15, 0, 0.05, 1)';
+                    const containerWidth = document.querySelector('.slot-machine').offsetWidth;
+                    const stopPos = (35 * 100) + 50 - (containerWidth / 2);
+                    track.style.transform = `translateX(-${stopPos}px)`;
+                }, 50);
+                
+                setTimeout(() => {
+                    let hasSSR = false;
+                    let anyNearMiss = false;
+                    for (let i = 0; i < 10; i++) {
+                        const r = getRandomItem();
+                        const nearMissForThis = (r.id !== 'ssr') && (Math.random() < 0.35);
+                        if (nearMissForThis) anyNearMiss = true;
+                        totalPulls++;
+                        if (r.id === 'ssr') {
+                            hasSSR = true;
+                            streakWithoutSSR = 0;
+                            rareCount++;
+                        } else {
+                            streakWithoutSSR++;
+                        }
+                        if (r.id === 'epic') rareCount++;
+                        addToHistory(r);
+                        markGridProgress(r.id === 'ssr');
+                    }
+                    if (anyNearMiss) {
+                        lastPullWasNearMiss = true;
+                        lastNearMissTime = Date.now();
+                        document.getElementById('near-miss-alert').classList.remove('hidden');
+                    } else {
+                        lastPullWasNearMiss = false;
+                    }
+                    if (hasSSR) showMessage(TRANSLATIONS[currentLang].msgWin);
+                    isSpinning = false;
+                    updateStats();
+                }, 1100);
+            }
+        }
+        
         function finalizePull(item, wasNearMiss) {
             totalPulls++;
             if (item.id === 'ssr' || item.id === 'epic') rareCount++;
+            if (item.id === 'ssr') {
+                streakWithoutSSR = 0;
+                showMessage(TRANSLATIONS[currentLang].msgWin);
+            } else {
+                streakWithoutSSR++;
+            }
             markGridProgress(item.id === 'ssr');
             addToHistory(item);
-            if (wasNearMiss) document.getElementById('near-miss-alert').classList.remove('hidden');
-            if (item.id === 'ssr') showMessage(TRANSLATIONS[currentLang].msgWin);
+            if (wasNearMiss) {
+                document.getElementById('near-miss-alert').classList.remove('hidden');
+                lastPullWasNearMiss = true;
+                lastNearMissTime = Date.now();
+            } else {
+                lastPullWasNearMiss = false;
+            }
+            updateDynamicTheory();
         }
-
+        
         function addToHistory(item) {
-            const history = document.getElementById('history');
+            const historyDiv = document.getElementById('history');
             const noHist = document.getElementById('no-history');
             if (noHist) noHist.remove();
             const entry = document.createElement('div');
             entry.className = "flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 mb-2 animate-fadeIn";
             const label = item.id === 'ssr' ? TRANSLATIONS[currentLang].legendaryLabel : item.label;
             entry.innerHTML = `<span class="${item.color}">${item.emoji} ${label}</span><span class="text-slate-300">#${totalPulls}</span>`;
-            history.prepend(entry);
+            historyDiv.prepend(entry);
         }
-
+        
         function createSlotItems(targetItem, isNearMiss) {
             const track = document.getElementById('slot-track');
             track.innerHTML = '';
@@ -448,43 +598,39 @@
                 const div = document.createElement('div');
                 div.className = 'slot-item';
                 let displayItem = (i === 35) ? targetItem : (i === 34 && isNearMiss ? ITEMS.find(it => it.id === 'ssr') : ITEMS[Math.floor(Math.random() * 3)]);
-                if (displayItem.id === 'ssr' && (i === 35 || i === 34)) div.classList.add(i === 34 ? 'near-miss-glow' : 'legendary-glow');
+                if (displayItem && displayItem.id === 'ssr' && (i === 35 || i === 34)) div.classList.add(i === 34 ? 'near-miss-glow' : 'legendary-glow');
+                if (!displayItem) displayItem = ITEMS[0];
                 div.innerHTML = `<span>${displayItem.emoji}</span>`;
                 track.appendChild(div);
             }
         }
-
+        
         function resetGame() {
             if (!confirm(TRANSLATIONS[currentLang].confirmReset)) return;
-            
-            // Reset status total
             balance = 5000;
             totalPulls = 0;
             rareCount = 0;
             gridProgress = 0;
+            streakWithoutSSR = 0;
+            lastPullWasNearMiss = false;
             isSpinning = false;
-            
-            // Bersihkan UI
             document.getElementById('history').innerHTML = `<p id="no-history" class="text-slate-400 text-center py-8 italic">${TRANSLATIONS[currentLang].noHistory}</p>`;
             document.getElementById('near-miss-alert').classList.add('hidden');
-            
-            // Reset visual track mesin
             const track = document.getElementById('slot-track');
             track.style.transition = 'none';
             track.style.transform = 'translateX(0px)';
-            
-            // Inisialisasi ulang grid dan stats
             initProbabilityGrid();
             updateStats();
             createSlotItems(ITEMS[0], false);
-            
             showMessage("Data telah direset / Data cleared");
+            updateDynamicTheory();
         }
-
+        
         window.onload = () => {
             initProbabilityGrid();
             updateLanguageUI();
             createSlotItems(ITEMS[0], false);
+            updateDynamicTheory();
         };
     </script>
 </body>
