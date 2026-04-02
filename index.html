@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gacha Lab: Bilingual Edition 2.2</title>
+    <title>Gacha Lab: Bilingual Edition 2.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -79,29 +79,39 @@
         .revealed-gold {
             background-color: #eab308 !important;
             box-shadow: 0 0 10px #eab308;
+            transform: scale(1.1);
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <div class="max-w-6xl mx-auto">
-        <!-- Language Switcher -->
+        <!-- Pengalih Bahasa -->
         <div class="flex justify-end mb-4">
             <button onclick="toggleLanguage()" class="bg-white border border-slate-200 px-4 py-2 rounded-full text-sm font-bold shadow-sm hover:bg-slate-50 flex items-center gap-2">
                 🌐 <span id="lang-btn">Switch to English</span>
             </button>
         </div>
 
-        <!-- Header -->
+        <!-- Judul Utama -->
         <header class="text-center mb-10">
-            <h1 class="text-5xl font-extrabold text-slate-900 mb-2 tracking-tight">Gacha Lab <span class="text-blue-600">2.2</span></h1>
+            <h1 class="text-5xl font-extrabold text-slate-900 mb-2 tracking-tight">Gacha Lab <span class="text-blue-600">2.3</span></h1>
             <p id="sub-title" class="text-slate-500 font-medium italic">"Membongkar Rahasia di Balik Tarikan Berhadiah"</p>
         </header>
 
         <div class="grid lg:grid-cols-12 gap-8">
             
-            <!-- LEFT: Simulation Area (7 cols) -->
+            <!-- KIRI: Area Simulasi -->
             <div class="lg:col-span-7 space-y-6">
-                <!-- Stats Dashboard -->
+                <!-- Dashboard Statistik -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                         <p id="stat-balance-label" class="text-[10px] text-slate-400 uppercase font-bold">Koin Tersisa</p>
@@ -121,7 +131,7 @@
                     </div>
                 </div>
 
-                <!-- Simulation Box -->
+                <!-- Kotak Simulasi -->
                 <div class="bg-slate-900 p-8 rounded-3xl shadow-2xl text-white relative overflow-hidden">
                     <div class="flex justify-between items-center mb-6">
                         <h2 id="machine-title" class="text-xl font-bold">Mesin Simulasi</h2>
@@ -134,53 +144,44 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-4">
-                        <button onclick="pull(1)" id="pull-1" class="flex-1 bg-blue-600 hover:bg-blue-500 py-4 rounded-2xl font-bold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button onclick="pull(1)" id="pull-1" class="flex-1 bg-blue-600 hover:bg-blue-500 py-4 rounded-2xl font-bold transition-all shadow-lg active:scale-95 disabled:opacity-50">
                             Pull 1x (100 🪙)
                         </button>
-                        <button onclick="pull(10)" id="pull-10" class="flex-1 bg-purple-600 hover:bg-purple-500 py-4 rounded-2xl font-bold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button onclick="pull(10)" id="pull-10" class="flex-1 bg-purple-600 hover:bg-purple-500 py-4 rounded-2xl font-bold transition-all shadow-lg active:scale-95 disabled:opacity-50">
                             Pull 10x (1000 🪙)
                         </button>
                     </div>
                     
-                    <button onclick="resetGame()" id="reset-btn" class="w-full mt-6 text-slate-500 hover:text-slate-300 text-xs transition-colors underline">
+                    <button onclick="resetGame()" id="reset-btn" class="w-full mt-6 text-slate-500 hover:text-slate-300 text-xs transition-colors underline decoration-dotted">
                         Mulai Ulang Simulasi
                     </button>
                 </div>
 
-                <!-- Probability Visualization -->
+                <!-- Visualisasi Peluang -->
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <h3 id="reality-title" class="font-bold text-slate-800 mb-2">Peluang Nyata (1%)</h3>
-                    <p id="reality-desc" class="text-xs text-slate-500 mb-4">Ada 1 kotak emas tersembunyi di grid ini. Kotak abu-abu gelap adalah uang yang hangus. Bisakah kamu menemukannya?</p>
-                    <div id="prob-grid" class="probability-grid grid grid-cols-10 gap-1">
-                        <!-- JS injects 100 dots -->
-                    </div>
+                    <p id="reality-desc" class="text-xs text-slate-500 mb-4">Setiap titik adalah uangmu. Hanya satu yang emas. Sisanya? Hangus.</p>
+                    <div id="prob-grid" class="probability-grid grid grid-cols-10 gap-1"></div>
                 </div>
             </div>
 
-            <!-- RIGHT: Theory Area -->
+            <!-- KANAN: Area Teori & Riwayat -->
             <div class="lg:col-span-5 space-y-6">
+                <!-- Alert Near-Miss -->
                 <div id="near-miss-alert" class="hidden bg-rose-50 p-6 rounded-3xl border-2 border-rose-200 animate-bounce">
                     <h3 id="alert-title" class="font-bold text-rose-600 flex items-center gap-2">⚠️ JEBAKAN TERDETEKSI!</h3>
-                    <p id="alert-desc" class="text-sm text-rose-700 mt-2 leading-relaxed font-medium">
-                        "NEAR-MISS EFFECT": Game sengaja memamerkan item emas tepat di samping item sampah agar kamu merasa "nyaris menang".
-                    </p>
+                    <p id="alert-desc" class="text-sm text-rose-700 mt-2 leading-relaxed font-medium"></p>
                 </div>
 
-                <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 overflow-y-auto max-h-[500px]">
+                <!-- Bagian Teori -->
+                <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 overflow-y-auto max-h-[600px] scrollbar-hide">
                     <h3 id="theory-header" class="text-xl font-bold text-slate-800 mb-6 border-b pb-4">🧠 Sains Kecanduan</h3>
-                    <div class="space-y-6">
-                        <div class="flex gap-4">
-                            <div class="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold">1</div>
-                            <p id="t1-desc" class="text-xs text-slate-600">Dopamin keluar saat *antisipasi* (menunggu putaran), bukan hanya saat menang.</p>
-                        </div>
-                        <div class="flex gap-4">
-                            <div class="bg-purple-100 text-purple-600 w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold">2</div>
-                            <p id="t2-desc" class="text-xs text-slate-600">Sistem hadiah acak adalah cara tercepat merusak kontrol impuls pada otak anak.</p>
-                        </div>
+                    <div id="theory-container" class="space-y-6">
+                        <!-- Konten Teori akan diisi oleh JS -->
                     </div>
                 </div>
 
-                <!-- History Log -->
+                <!-- Log Riwayat -->
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 h-64 overflow-y-auto">
                     <h3 id="history-title" class="font-bold text-slate-800 mb-4 sticky top-0 bg-white py-1">Riwayat Tarikan</h3>
                     <div id="history" class="space-y-2 text-[10px]">
@@ -191,7 +192,7 @@
         </div>
     </div>
 
-    <!-- Notification -->
+    <!-- Notifikasi -->
     <div id="message-box" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-8 py-3 rounded-full shadow-2xl pointer-events-none z-50">
         <span id="message-text"></span>
     </div>
@@ -203,7 +204,6 @@
         let rareCount = 0;
         let isSpinning = false;
         let gridProgress = 0;
-        let hiddenLuckyIndex = -1;
 
         const TRANSLATIONS = {
             id: {
@@ -215,17 +215,24 @@
                 moneyLabel: 'Estimasi Rupiah',
                 machineTitle: 'Mesin Simulasi',
                 realityTitle: 'Peluang Nyata (1%)',
-                realityDesc: 'Ada 1 kotak emas tersembunyi di grid ini. Kotak abu-abu gelap adalah uang yang hangus. Bisakah kamu menemukannya?',
+                realityDesc: 'Ada 1 kotak emas tersembunyi di grid ini. Setiap tarikan mewakili Rp 10.000 yang kamu keluarkan.',
                 alertTitle: '⚠️ JEBAKAN TERDETEKSI!',
-                alertDesc: '"NEAR-MISS EFFECT": Game sengaja memamerkan item emas tepat di samping item sampah agar kamu merasa "nyaris menang".',
+                alertDesc: '"NEAR-MISS EFFECT": Game sengaja memamerkan item emas tepat di samping item sampah agar kamu merasa "nyaris menang" dan ingin coba lagi.',
                 theoryHeader: '🧠 Sains Kecanduan',
                 historyTitle: 'Riwayat Tarikan',
                 noHistory: 'Belum ada aktivitas...',
                 resetBtn: 'Mulai Ulang Simulasi',
                 msgPull10: 'Memproses 10 tarikan cepat...',
                 msgWin: 'Luar Biasa! Kamu sangat beruntung!',
-                confirmReset: 'Isi ulang koin dan hapus riwayat?',
-                legendaryLabel: 'LEGENDARY (SSR)'
+                confirmReset: 'Isi ulang koin dan hapus semua data simulasi?',
+                legendaryLabel: 'LEGENDARY (SSR)',
+                theories: [
+                    { t: "Dopamine Loop", d: "Otakmu mengeluarkan zat kimia 'senang' saat menunggu putaran mesin berhenti. Ini membuatmu ketagihan klik tombolnya." },
+                    { t: "Gambler's Fallacy", d: "Anggapan salah bahwa jika kamu sering kalah, maka kemenangan 'pasti sudah dekat'. Padahal peluang tiap tarikan selalu sama." },
+                    { t: "Sunk Cost Fallacy", d: "Merasa sayang berhenti karena sudah habis banyak. Ini membuatmu terus kehilangan lebih banyak uang." },
+                    { t: "Social Proof", d: "Game sering memberi tahu saat orang lain menang besar. Ini membuatmu merasa menang itu mudah, padahal tidak." },
+                    { t: "Loss Aversion", d: "Rasa sakit kehilangan koin terasa 2x lebih kuat daripada rasa senang saat mendapatkannya. Ini memicu stres." }
+                ]
             },
             en: {
                 langBtn: 'Ganti ke Indonesia',
@@ -236,17 +243,24 @@
                 moneyLabel: 'Real Money Est.',
                 machineTitle: 'Simulation Machine',
                 realityTitle: 'Reality Check (1%)',
-                realityDesc: 'There is 1 hidden gold box in this grid. Dark gray dots are your wasted money. Can you find it?',
+                realityDesc: 'There is 1 hidden gold box in this grid. Each pull represents Rp 10.000 you spend.',
                 alertTitle: '⚠️ TRAP DETECTED!',
-                alertDesc: '"NEAR-MISS EFFECT": Games show gold items right next to your result to make you feel "so close".',
+                alertDesc: '"NEAR-MISS EFFECT": Games show gold items right next to your result to trick you into thinking you are "almost there".',
                 theoryHeader: '🧠 Addiction Science',
                 historyTitle: 'Pull History',
                 noHistory: 'No activity yet...',
                 resetBtn: 'Reset Simulation',
                 msgPull10: 'Processing 10 fast pulls...',
                 msgWin: 'Incredible! You are very lucky!',
-                confirmReset: 'Refill coins and clear history?',
-                legendaryLabel: 'LEGENDARY (SSR)'
+                confirmReset: 'Refill coins and clear all simulation data?',
+                legendaryLabel: 'LEGENDARY (SSR)',
+                theories: [
+                    { t: "Dopamine Loop", d: "Your brain releases 'happy' chemicals while waiting for the spin to stop. This makes the clicking addictive." },
+                    { t: "Gambler's Fallacy", d: "The false belief that if you lose often, a win 'must be due'. In reality, every pull has the same low odds." },
+                    { t: "Sunk Cost Fallacy", d: "Feeling like you can't stop because you've spent too much. This leads to losing even more money." },
+                    { t: "Social Proof", d: "Games announce when others win big. This tricks you into thinking winning is common when it's not." },
+                    { t: "Loss Aversion", d: "The pain of losing coins is 2x stronger than the joy of winning. This triggers emotional stress." }
+                ]
             }
         };
 
@@ -279,13 +293,30 @@
             document.getElementById('history-title').innerText = t.historyTitle;
             if (document.getElementById('no-history')) document.getElementById('no-history').innerText = t.noHistory;
             document.getElementById('reset-btn').innerText = t.resetBtn;
+            
+            // Update Teori
+            const container = document.getElementById('theory-container');
+            container.innerHTML = '';
+            const colors = ['blue', 'purple', 'rose', 'amber', 'emerald'];
+            t.theories.forEach((theory, i) => {
+                const div = document.createElement('div');
+                div.className = 'flex gap-4';
+                div.innerHTML = `
+                    <div class="bg-${colors[i]}-100 text-${colors[i]}-600 w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold">${i+1}</div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-sm">${theory.t}</h4>
+                        <p class="text-[11px] text-slate-600 leading-relaxed">${theory.d}</p>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
             updateStats();
         }
 
         function initProbabilityGrid() {
             const grid = document.getElementById('prob-grid');
             grid.innerHTML = '';
-            hiddenLuckyIndex = Math.floor(Math.random() * 100);
             for (let i = 0; i < 100; i++) {
                 const dot = document.createElement('div');
                 dot.id = `dot-${i}`;
@@ -299,9 +330,9 @@
             if (gridProgress < 100) {
                 const dot = document.getElementById(`dot-${gridProgress}`);
                 if (isWin) {
-                    dot.classList.add('revealed-gold');
+                    dot.className = 'h-3 rounded-sm revealed-gold';
                 } else {
-                    dot.classList.add('spent-dot');
+                    dot.className = 'h-3 rounded-sm spent-dot';
                 }
                 gridProgress++;
             }
@@ -312,7 +343,7 @@
             const txt = document.getElementById('message-text');
             txt.innerText = text;
             box.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => box.classList.add('translate-y-20', 'opacity-0'), 2000);
+            setTimeout(() => box.classList.add('translate-y-20', 'opacity-0'), 2500);
         }
 
         function updateStats() {
@@ -342,7 +373,8 @@
                 
                 setTimeout(() => {
                     track.style.transition = 'transform 3s cubic-bezier(0.15, 0, 0.05, 1)';
-                    const stopPos = (35 * 100) + 50 - (document.querySelector('.slot-machine').offsetWidth / 2);
+                    const containerWidth = document.querySelector('.slot-machine').offsetWidth;
+                    const stopPos = (35 * 100) + 50 - (containerWidth / 2);
                     track.style.transform = `translateX(-${stopPos}px)`;
                 }, 50);
 
@@ -357,7 +389,8 @@
                 
                 setTimeout(() => {
                     track.style.transition = 'transform 1s cubic-bezier(0.15, 0, 0.05, 1)';
-                    const stopPos = (35 * 100) + 50 - (document.querySelector('.slot-machine').offsetWidth / 2);
+                    const containerWidth = document.querySelector('.slot-machine').offsetWidth;
+                    const stopPos = (35 * 100) + 50 - (containerWidth / 2);
                     track.style.transform = `translateX(-${stopPos}px)`;
                 }, 50);
 
@@ -402,7 +435,7 @@
             const noHist = document.getElementById('no-history');
             if (noHist) noHist.remove();
             const entry = document.createElement('div');
-            entry.className = "flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 mb-2";
+            entry.className = "flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 mb-2 animate-fadeIn";
             const label = item.id === 'ssr' ? TRANSLATIONS[currentLang].legendaryLabel : item.label;
             entry.innerHTML = `<span class="${item.color}">${item.emoji} ${label}</span><span class="text-slate-300">#${totalPulls}</span>`;
             history.prepend(entry);
@@ -423,25 +456,29 @@
 
         function resetGame() {
             if (!confirm(TRANSLATIONS[currentLang].confirmReset)) return;
-            // Full state reset
+            
+            // Reset status total
             balance = 5000;
             totalPulls = 0;
             rareCount = 0;
             gridProgress = 0;
             isSpinning = false;
             
-            // UI Reset
+            // Bersihkan UI
             document.getElementById('history').innerHTML = `<p id="no-history" class="text-slate-400 text-center py-8 italic">${TRANSLATIONS[currentLang].noHistory}</p>`;
             document.getElementById('near-miss-alert').classList.add('hidden');
             
-            // Visual Track Reset
+            // Reset visual track mesin
             const track = document.getElementById('slot-track');
             track.style.transition = 'none';
             track.style.transform = 'translateX(0px)';
             
+            // Inisialisasi ulang grid dan stats
             initProbabilityGrid();
             updateStats();
             createSlotItems(ITEMS[0], false);
+            
+            showMessage("Data telah direset / Data cleared");
         }
 
         window.onload = () => {
